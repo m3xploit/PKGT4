@@ -18,4 +18,5 @@ Especially the first feature will be hella improved
 ## Installation
 
 So you will basiclly need GCC installed on your system and run "make"
-in your terminal and thats it. You will get an binary named pkg4t
+in your terminal and thats it. You will get an binary named pkg4t, or
+just download my precompiled binary from the releases.
