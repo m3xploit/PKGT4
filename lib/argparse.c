@@ -27,6 +27,7 @@ Args* parse_args(int argc, char* argv[]) {
         printf("examples:\n");
         printf("   %s --info GoW_Ragnarok_v100.pkg\n", argv[0]);
         printf("   %s --patch-content-id EP4497-CUSA16579_00-0000000000000001 GoW_Ragnarok_v100.pkg\n", argv[0]);
+        printf("   %s --patch-title-id CUSA00000 GoW_Ragnarok_v100.pkg\n", argv[0]);
 
         args->exit = true;
         args->exitcode = 0;
