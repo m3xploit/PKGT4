@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
+#include <inttypes.h>
 
 #include "lib/argparse.h"
 #include "lib/pkg.h"
@@ -64,15 +65,15 @@ int main(int argc, char* argv[]) {
         
         printf("Package : %s\n\n", args->pkg);
 
-        printf("Content ID : %s\n", pkg_header.pkg_content_id);
-        printf("Title ID   : %s\n", title_id);
+        printf("Content ID: %s\n", pkg_header.pkg_content_id);
+        printf("Title ID: %s\n", title_id);
 
         free(title_id);
     }
 
     if (args->flag_patch_content_id) { // User wants us to patch the current content id to a new one
         printf("Seeking to offset 0x40 ...\n");
-        fseek(pkg_fp, 0x40, SEEK_SET);
+        fseek(pkg_fp, 0x40, SEEK_SET); // Goto content ID offset
 
         printf("Current content ID: %s\n", pkg_header.pkg_content_id);
 
@@ -101,13 +102,60 @@ int main(int argc, char* argv[]) {
                 printf("New content ID: %s\n", args->new_content_id);
             }
             else
-                printf("Patch failed! :(\n\n");
+                printf("Patch failed! :(\n");
             
         }
         else
             printf("Content IDs match! No need to patch.\n");
     }
+
+    if (args->flag_patch_title_id) { // User wants us to patch the current content id to a new one
+        printf("Seeking to offset 0x47 ...\n");
+        fseek(pkg_fp, 0x47, SEEK_SET); // Goto title ID offset
+
+        unsigned char* current_title_id = get_title_id_from_content_id(pkg_header.pkg_content_id);
+        printf("Current title ID: %s\n", current_title_id);
+
+        if (strcmp(current_title_id, args->new_title_id) != 0) { // Check if title IDs already match
+            
+            for (int title_id_index = 0; title_id_index < 9; title_id_index++) {
+                if (current_title_id[title_id_index] == args->new_title_id[title_id_index]) { // Check if the byte does not need to be patched
+                    printf("No need to patch byte at position 0x%x, byte already matches with %x\n", 0x47 + title_id_index, current_title_id[title_id_index]);
+                    fseek(pkg_fp, ftell(pkg_fp) + 1, SEEK_SET);
+                }
+                else { // Byte needs to be patched
+                    printf("Patching %x to %x at position 0x%x ...\n", current_title_id[title_id_index], args->new_title_id[title_id_index], 0x47 + title_id_index);
+                    fwrite(&args->new_title_id[title_id_index], 1, 1, pkg_fp);
+                }
+            }
+
+            // Validate patch
+            printf("Validating patch ...\n");
+            fseek(pkg_fp, 0, SEEK_SET);
+
+            PKG_Header pkg_header_tmp;
+            fread(&pkg_header_tmp, 1, sizeof(PKG_Header), pkg_fp);
+            
+            unsigned char* current_title_id_tmp = get_title_id_from_content_id(pkg_header_tmp.pkg_content_id);
+
+            if (strcmp(current_title_id_tmp, args->new_title_id) == 0) { 
+                printf("Patch was successful! :)\n");
+                printf("New title ID: %s\n", args->new_title_id);
+            }
+            else
+                printf("Patch failed! :(\n");
+
+            free(current_title_id_tmp);
+        }
+        else
+            printf("Title IDs match! No need to patch.\n");
+
+        free(current_title_id);
+    }
     
+    if (!args->flag_patch_content_id && !args->flag_info && !args->flag_patch_title_id) // User specified PKG file but no args
+        printf("What do you want me to do?? Please take a look at the examples\n");
+
     fclose(pkg_fp);
     free(args->pkg);
     free(args);

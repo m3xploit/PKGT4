@@ -11,8 +11,10 @@ typedef struct {
 
     bool flag_info;
     bool flag_patch_content_id;
+    bool flag_patch_title_id;
 
     unsigned char new_content_id[0x24];
+    unsigned char new_title_id[9];
 
     bool exit; // If true, pkg4t exits after argument parsing
     int  exitcode; // Exitcode if exit is true
